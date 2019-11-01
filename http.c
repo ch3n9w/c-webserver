@@ -8,11 +8,18 @@
 const char * httpVersion="HTTP/1.1";
 const char * serverName="Kapache";
 
+void listFiles(const char *path);
+char allFile[10000] = {'\0'};
+int len = 0;
+
 static httpRequest request;
 static httpResponse response;
 
 static unsigned char content[BUF2_SIZE];
 static unsigned char url_parse[20];
+static unsigned char template[]="<html><br><body><br><table><br><tr><a>Name</a></tr><br><br>%s<br></table><br></body><br></html>";
+static unsigned char fileTemplate[]="";
+	
 
 
 int handleRequest(unsigned char* buf){
@@ -47,6 +54,7 @@ int handleRequest(unsigned char* buf){
     if(fp){
 	memset(content, '\0', BUF2_SIZE);
 	len =fread(content, sizeof(unsigned char), BUF2_SIZE, fp);
+	memset(buf, '\0', BUF_SIZE);
 	headLen = get_head(buf, len);
 	
 #ifdef DEBUG
@@ -127,6 +135,11 @@ int parseRequest(unsigned char* buf){
 		}else{
 		    fprintf(stderr, "the open folder path is:%s \n",request.url);
 		    strcpy(response.contentType, "text/html");
+		    listFiles(request.url);
+
+		    fprintf(stderr, "%s\n", allFile);
+		    /* return 1 means the request.url is a folder */
+		    return 1;
 		}
 		break;
 	    }
@@ -156,12 +169,28 @@ int get_head(unsigned char *buf, int contentLen){
     return len+strlen((char*)(buf+len));
 }
 
-/* GET / HTTP/1.1 */
-/* Host: 127.0.0.1:12334 */
-/* User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:70.0) Gecko/20100101 Firefox/7 */
-/* 0.0 */
-/* Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*[>;q=0.8 */
-/* Accept-Language: en-US,en;q=0.5 */
-/* Accept-Encoding: gzip, deflate */
-/* Connection: keep-alive */
-/* Upgrade-Insecure-Requests: 1 */
+
+void listFiles(const char *basepath){
+    char path[1000];
+    char tmp_name[1000];
+    struct dirent *dp;
+    DIR *dir = opendir(basepath);
+
+    if(!dir)
+	return;
+    while((dp = readdir(dir))!=NULL){
+	if(strcmp(dp->d_name,".") != 0 && strcmp(dp->d_name, "..") != 0){
+	    /* printf("%s\n",dp->d_name); */
+	    strcpy(path, basepath);
+	    strcat(path, "/");
+	    strcat(path, dp->d_name);
+	    strcpy(tmp_name, dp->d_name);
+	    strcat(tmp_name, "\n");
+	    strcpy(allFile+len, tmp_name);
+	    len = strlen(allFile);
+	    listFiles(path);
+	}
+    }
+
+    closedir(dir);
+}
