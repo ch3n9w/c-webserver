@@ -22,6 +22,11 @@ typedef struct httpResponse{
     int contentLength;
 } httpResponse;
 
+struct fileList{
+    char * name;
+    struct fileList * p_next;
+};
+
 int getContent(FILE* fp);
 
 int getHead(unsigned char* buf, int contentLen);

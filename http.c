@@ -1,4 +1,5 @@
 #include <string.h>
+#include <malloc.h>
 #include "http.h"
 #include "action.h"
 #include <stdio.h>
@@ -8,31 +9,37 @@
 const char * httpVersion="HTTP/1.1";
 const char * serverName="Kapache";
 
-void listFiles(const char *path);
-char allFile[10000] = {'\0'};
+struct fileList * listFiles(const char *path);
+struct fileList * node;
+/* char allFile[10000] = {'\0'}; */
 int len = 0;
 
 static httpRequest request;
 static httpResponse response;
 
-static unsigned char content[BUF2_SIZE];
+static char content[BUF2_SIZE];
 static unsigned char url_parse[20];
-static unsigned char template[]="<html><br><body><br><table><br><tr><a>Name</a></tr><br><br>%s<br></table><br></body><br></html>";
-static unsigned char fileTemplate[]="";
-	
-
 
 int handleRequest(unsigned char* buf){
-#ifdef DEBUG
-    fprintf(stderr, "request:\n %s", buf);
-#endif
+
+    int folderFlag = 0;
     FILE * fp;
     if(parseRequest(buf) == -1){
 	response.status = 500;
 	fp = fopen("500.html", "rb");
-#ifdef DEBUG
-	fprintf(stderr, "500 error occured");
-#endif
+
+    }else if(parseRequest(buf) == 1){
+	fprintf(stderr, "this is the request folder: %s\n", request.url);
+	node = listFiles(request.url);
+
+	/* do{ */
+	    /* fprintf(stderr, "%s\n", node->name); */
+	    /* node = node->p_next; */
+	/* }while(node->p_next); */
+
+	/* fprintf(stderr, "%s\n", allFile); */
+	fp = fopen("template.html", "rb");
+	folderFlag = 1;
     }else if((fp = fopen(request.url, "rb"))==NULL){
 	response.status = 404;
 	fp = fopen("404.html","rb");
@@ -49,18 +56,46 @@ int handleRequest(unsigned char* buf){
 	fprintf(stderr, "200 ok, get the file");
 #endif
     }
+
     /* open file finished */
-    int len, headLen;
+    int len, headLen, len1, len2;
+    char folderBuf[100000];
     if(fp){
 	memset(content, '\0', BUF2_SIZE);
-	len =fread(content, sizeof(unsigned char), BUF2_SIZE, fp);
+	memset(folderBuf, '\0', 100000);
 	memset(buf, '\0', BUF_SIZE);
-	headLen = get_head(buf, len);
-	
-#ifdef DEBUG
-	fprintf(stderr, "\ncontentlength:%d\n",len);
-	fprintf(stderr, "\nheadlength:%d\n",headLen);
-#endif
+
+	if(folderFlag == 1){
+	    fprintf(stderr, "errorrrrrrrrrrrrr");
+	    strcpy(content, "<html><body><table><tr><a>Name</a></tr><tr><td valign='top'></td><td><a href='/'>Parent Directory/</a></td>");
+	    len = strlen(content);
+	    char * item = "<tr><td valign='top'></td><td><a href='/%s'>%s</a></td>";
+	    char item_tmp[100];
+	    char * ender = "</table></body></html>";
+
+	    /* len = fread(content, sizeof(unsigned char), BUF2_SIZE, fp); */
+
+	for(struct fileList* p=node;p->p_next;p=p->p_next){
+	    fprintf(stderr, "%s\n", p->name);
+	}
+
+	    do{
+		fprintf(stderr, "start to print a node");
+		fprintf(stderr, "%s\n", node->name);
+		sprintf(item_tmp, item, node->name, node->name);
+		node = node->p_next;
+		strcpy(content + len, item_tmp);
+		len = strlen(content);
+	    }while(node->p_next);
+	    strcpy(content + len, ender);
+	    len = strlen(content);
+	    /* sprintf(folderBuf, content, "index.html"); */
+	    fprintf(stderr, "%s", content);
+	    headLen = get_head(buf, len);
+	}else{
+	    len =fread(content, sizeof(unsigned char), BUF2_SIZE, fp);
+	    headLen = get_head(buf, len);
+	}
     }else{
 	fp = fopen("index.html", "rb");
 	len = fread(content, sizeof(unsigned char), BUF2_SIZE, fp);
@@ -68,9 +103,6 @@ int handleRequest(unsigned char* buf){
     }
     /* then it is time to merge the http-header and http-content */
     /* do not use strcpy cause the exisience of \0 */
-    fprintf(stderr, "%d\n", len);
-    fprintf(stderr, "%d\n", headLen);
-    fprintf(stderr, "%s\n", buf);
 
     int i=0;
     for(i=0; i<len; i++){
@@ -79,8 +111,12 @@ int handleRequest(unsigned char* buf){
 	    fprintf(stderr, "the content length is beyond the limitation");
 	}
     }
-    fprintf(stderr, "response:\n%s \n",buf);
+    fprintf(stderr, "%d\n", len);
+    fprintf(stderr, "%d\n", headLen);
+    fprintf(stderr, "%s\n", buf);
+
     return len+headLen;
+
 }
 
 /* parse http request and pass it to struct */
@@ -133,11 +169,7 @@ int parseRequest(unsigned char* buf){
 			strcpy(response.contentType, "image/png");
 		    else strcpy(response.contentType, "text/html");
 		}else{
-		    fprintf(stderr, "the open folder path is:%s \n",request.url);
 		    strcpy(response.contentType, "text/html");
-		    listFiles(request.url);
-
-		    fprintf(stderr, "%s\n", allFile);
 		    /* return 1 means the request.url is a folder */
 		    return 1;
 		}
@@ -170,27 +202,40 @@ int get_head(unsigned char *buf, int contentLen){
 }
 
 
-void listFiles(const char *basepath){
-    char path[1000];
-    char tmp_name[1000];
+struct fileList * listFiles(const char *basepath){
+    /* memset(allFile, '\0', strlen(allFile)); */
+    /* char path[1000]; */
+    /* char tmp_name[1000]; */
     struct dirent *dp;
     DIR *dir = opendir(basepath);
 
+    struct fileList * node;
+    node = (struct fileList *)malloc(sizeof(struct fileList));
+    struct fileList * nodeHead = node;
     if(!dir)
-	return;
+	return node;
     while((dp = readdir(dir))!=NULL){
 	if(strcmp(dp->d_name,".") != 0 && strcmp(dp->d_name, "..") != 0){
-	    /* printf("%s\n",dp->d_name); */
-	    strcpy(path, basepath);
-	    strcat(path, "/");
-	    strcat(path, dp->d_name);
-	    strcpy(tmp_name, dp->d_name);
-	    strcat(tmp_name, "\n");
-	    strcpy(allFile+len, tmp_name);
-	    len = strlen(allFile);
-	    listFiles(path);
+	    node ->name = (char*)malloc(strlen(dp->d_name)+1);
+	    strcpy(node->name,dp->d_name);
+	    struct fileList * nodeNext;
+	    nodeNext = (struct fileList *)malloc(sizeof(struct fileList));
+	    node->p_next = nodeNext;
+	    node = nodeNext;
+	    /* strcpy(path, basepath); */
+	    /* strcat(path, "/"); */
+	    /* strcat(path, dp->d_name); */
+	    /* strcpy(tmp_name, dp->d_name); */
+	    /* strcat(tmp_name, "\n"); */
+	    /* strcpy(allFile+len, tmp_name); */
+	    /* len = strlen(allFile); */
+	    /* listFiles(path); */
 	}
     }
-
     closedir(dir);
+    return nodeHead;
+}
+
+void render(){
+
 }

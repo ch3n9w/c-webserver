@@ -68,6 +68,9 @@ int worker(int socket_fd){
 	pid_t pid = fork();
 	if(pid==0){
 	    memset(buf, '\0', sizeof(buf));
+	    fprintf(stderr, "Check out whether buf is empty\n");
+	    fprintf(stderr, "%s\n", buf);
+	    fprintf(stderr, "Start to receive data\n");
 	    int len = recv(ac_sockfd, buf, BUF_SIZE, 0);
 	    /* in this function , the buf 's content will turn to response content */
 	    int ans = handleRequest(buf);
@@ -75,11 +78,12 @@ int worker(int socket_fd){
 	    if(ans<0){
 		return -1;
 	    }
-	    fprintf(stderr, "sending back the data");
 	    send(ac_sockfd, buf, ans, 0);
+        fprintf(stderr, "sending back the data\n");
 	    close(ac_sockfd);
 	    
 	}else if (pid<0)
+	    memset(buf, '\0', sizeof(buf));
 	    close(ac_sockfd);
     }
     return 0;
