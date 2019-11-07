@@ -70,9 +70,9 @@ int handleRequest(unsigned char* buf){
 
 	    /* len = fread(content, sizeof(unsigned char), BUF2_SIZE, fp); */
 
-	for(struct fileList* p=node;p->p_next;p=p->p_next){
-	    fprintf(stderr, "%s\n", p->name);
-	}
+	    for(struct fileList* p=node;p->p_next;p=p->p_next){
+		fprintf(stderr, "%s\n", p->name);
+	    }
 
 	    do{
 		fprintf(stderr, "start to print a node");
@@ -95,6 +95,7 @@ int handleRequest(unsigned char* buf){
 		if(fgets(cgiOut, 128, fp)!=NULL)
 		    printf("%s", cgiOut);
 	    }
+	    fprintf(stderr, "%s", cgiOut);
 	}
     }else{
 	fp = fopen("index.html", "rb");
