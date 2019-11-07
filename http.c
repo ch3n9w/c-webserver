@@ -34,6 +34,7 @@ int handleRequest(unsigned char* buf){
 	node = listFiles(request.url);
 
 	folderFlag = 1;
+	fp = fopen("template.html", "r");
     }else if((fp = fopen(request.url, "rb"))==NULL){
 	response.status = 404;
 	fp = fopen("404.html","rb");
