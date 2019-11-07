@@ -6,6 +6,8 @@
 
 int creatSocket(int);
 
+void take_log(struct sockaddr_in * remote_addr);
+
 int creatDaemon();
 
 int worker(int);
