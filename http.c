@@ -77,10 +77,6 @@ int handleRequest(unsigned char* buf){
 			char item_tmp[100];
 			char * ender = "</table></body></html>";
 
-			for(struct fileList* p=node;p->p_next;p=p->p_next){
-				fprintf(stderr, "%s\n", p->name);
-			}
-
 			// 全部格式化渲染
 			do{
 				// fprintf(stderr, "start to print a node");
