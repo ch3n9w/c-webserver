@@ -133,7 +133,7 @@ void take_log(struct sockaddr_in *remote_addr){
             exit(-1);
         }
         fclose(log);
-	fprintf(stderr, "%s", from);
+	// fprintf(stderr, "%s", from);
     }
     else
     {
