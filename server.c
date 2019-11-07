@@ -43,7 +43,7 @@ int main(int argc, char * argv[]){
     #endif
     // 让socket开始工作, 去执行获取, 解析和响应请求的一系列操作
     if(worker(socket_fd)<0)
-        fprintf(stder  r, "web server failed");
+        fprintf(stderr, "web server failed");
 
     return 1;
 
