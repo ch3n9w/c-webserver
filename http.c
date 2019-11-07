@@ -13,12 +13,13 @@ struct fileList * listFiles(const char *path);
 struct fileList * node;
 /* char allFile[10000] = {'\0'}; */
 int len = 0;
-
+int cgiFlag= 0;
 static httpRequest request;
 static httpResponse response;
 
 static char content[BUF2_SIZE];
 static unsigned char url_parse[20];
+char cgiOut[BUF2_SIZE];
 
 int handleRequest(unsigned char* buf){
 
@@ -32,15 +33,10 @@ int handleRequest(unsigned char* buf){
 	fprintf(stderr, "this is the request folder: %s\n", request.url);
 	node = listFiles(request.url);
 
-	/* do{ */
-	    /* fprintf(stderr, "%s\n", node->name); */
-	    /* node = node->p_next; */
-	/* }while(node->p_next); */
-
-	/* fprintf(stderr, "%s\n", allFile); */
-	fp = fopen("template.html", "rb");
 	folderFlag = 1;
     }else if((fp = fopen(request.url, "rb"))==NULL){
+	if(parseRequest(buf) == 2)
+	    cgiFlag = 1;
 	response.status = 404;
 	fp = fopen("404.html","rb");
 #ifdef DEBUG
@@ -66,7 +62,6 @@ int handleRequest(unsigned char* buf){
 	memset(buf, '\0', BUF_SIZE);
 
 	if(folderFlag == 1){
-	    fprintf(stderr, "errorrrrrrrrrrrrr");
 	    strcpy(content, "<html><body><table><tr><a>Name</a></tr><tr><td valign='top'></td><td><a href='/'>Parent Directory/</a></td>");
 	    len = strlen(content);
 	    char * item = "<tr><td valign='top'></td><td><a href='/%s'>%s</a></td>";
@@ -92,9 +87,14 @@ int handleRequest(unsigned char* buf){
 	    /* sprintf(folderBuf, content, "index.html"); */
 	    fprintf(stderr, "%s", content);
 	    headLen = get_head(buf, len);
-	}else{
+	}else if(cgiFlag == 0){
 	    len =fread(content, sizeof(unsigned char), BUF2_SIZE, fp);
 	    headLen = get_head(buf, len);
+	}else{
+	    while(!feof(fp)) {
+		if(fgets(cgiOut, 128, fp)!=NULL)
+		    printf("%s", cgiOut);
+	    }
 	}
     }else{
 	fp = fopen("index.html", "rb");
@@ -167,6 +167,10 @@ int parseRequest(unsigned char* buf){
 			strcpy(response.contentType, "image/ico");
 		    else if(strcmp(ext, "png")==0)
 			strcpy(response.contentType, "image/png");
+		    else if(strcmp(ext, "cgi")==0){
+			strcpy(response.contentType, "text/html");
+			return 2;
+		    }
 		    else strcpy(response.contentType, "text/html");
 		}else{
 		    strcpy(response.contentType, "text/html");
@@ -236,6 +240,3 @@ struct fileList * listFiles(const char *basepath){
     return nodeHead;
 }
 
-void render(){
-
-}
