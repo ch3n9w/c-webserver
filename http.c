@@ -95,7 +95,17 @@ int handleRequest(unsigned char* buf){
 		if(fgets(cgiOut, 128, fp)!=NULL)
 		    printf("%s", cgiOut);
 	    }
-	    fprintf(stderr, "%s", cgiOut);
+	    FILE * ptr;
+	    char buf_ps[1024];
+	    if((ptr=popen(cgiOut, "r"))!=NULL){
+		rewind(ptr);
+		while(!feof(ptr)){
+		    fgets(buf_ps, 1024, ptr);
+		    strcat(content, buf_ps);
+		}
+		pclose(ptr);
+		ptr = NULL;
+	    }
 	}
     }else{
 	fp = fopen("index.html", "rb");
