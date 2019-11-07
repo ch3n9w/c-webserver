@@ -35,8 +35,6 @@ int handleRequest(unsigned char* buf){
 
 	folderFlag = 1;
     }else if((fp = fopen(request.url, "rb"))==NULL){
-	if(parseRequest(buf) == 2)
-	    cgiFlag = 1;
 	response.status = 404;
 	fp = fopen("404.html","rb");
 #ifdef DEBUG
@@ -48,6 +46,8 @@ int handleRequest(unsigned char* buf){
     }else{
 	/* open the path file successfully */
 	response.status = 200;
+	if(parseRequest(buf) == 2)
+	    cgiFlag = 1;
 #ifdef DEBUG
 	fprintf(stderr, "200 ok, get the file");
 #endif
