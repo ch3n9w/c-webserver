@@ -33,6 +33,7 @@ int handleRequest(unsigned char* buf){
 	fprintf(stderr, "this is the request folder: %s\n", request.url);
 	node = listFiles(request.url);
 
+	fprintf(stderr, "this is the");
 	folderFlag = 1;
 	fp = fopen("template.html", "r");
     }else if((fp = fopen(request.url, "rb"))==NULL){
