@@ -6,6 +6,5 @@ http.o: http.c http.h
 	gcc http.c -c -o http.o -O2
 action.o: action.c action.h
 	gcc action.c -c -o action.o -O2
-
 clean:
 	rm *.o server
