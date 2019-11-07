@@ -117,6 +117,7 @@ void take_log(struct sockaddr_in *remote_addr)
             exit(-1);
         }
         fclose(log);
+	fprintf(stderr, "this is a test message");
     }
     else
     {
