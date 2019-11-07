@@ -110,6 +110,7 @@ void take_log(struct sockaddr_in *remote_addr)
     if (log)
     {
         log = fopen("log.txt", "a+");
+	fputs(from, log);
         if (EOF == fputs(from, log))
         {
             fprintf(stderr, "写入错误");
